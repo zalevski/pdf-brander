@@ -50,6 +50,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Prepare Nuxt types
+        run: npx nuxi prepare
+
       - name: Typecheck
         run: npm run typecheck
 
