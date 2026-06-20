@@ -19,9 +19,11 @@ jobs:
           - name: macos
             os: macos-latest
             args: ''
+            artifact_path: src-tauri/target/release/bundle/macos/*.dmg
           - name: windows
             os: windows-latest
             args: ''
+            artifact_path: src-tauri/target/release/*.exe
 
     runs-on: ${{ matrix.os }}
 
@@ -61,5 +63,5 @@ jobs:
           ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
         with:
           name: pdf-letterhead-${{ matrix.name }}
-          path: src-tauri/target/release/bundle/**
+          path: ${{ matrix.artifact_path }}
           if-no-files-found: error
