@@ -21,7 +21,7 @@
   },
   "actions": {
     "selectLetterhead": "Wybierz PDF papieru firmowego",
-    "selectInputs": "Wybierz pliki PDF wejściowe",
+    "selectInputs": "Wybierz pliki PDF lub DOCX",
     "selectOutput": "Wybierz katalog wyjściowy",
     "clear": "Wyczyść zaznaczenie",
     "removeFile": "Usuń plik",
@@ -30,7 +30,7 @@
   },
   "sections": {
     "letterhead": "PDF papieru firmowego",
-    "inputs": "Pliki PDF wejściowe",
+    "inputs": "Pliki wejściowe",
     "output": "Katalog wyjściowy",
     "files": "Wybrane pliki",
     "summary": "Podsumowanie",
@@ -45,17 +45,17 @@
   },
   "placeholders": {
     "noLetterhead": "Nie wybrano papieru firmowego",
-    "noInputs": "Nie wybrano plików PDF wejściowych",
+    "noInputs": "Nie wybrano plików wejściowych",
     "noOutput": "Nie wybrano katalogu wyjściowego"
   },
   "helper": {
     "letterhead": "Wybierz jeden PDF z papierem firmowym.",
-    "inputs": "Wybierz jeden lub więcej PDF-ów wygenerowanych z Worda.",
+    "inputs": "Wybierz jeden lub więcej plików PDF lub DOCX.",
     "output": "Wybierz miejsce zapisu wygenerowanych plików."
   },
   "drop": {
     "letterhead": "Przeciągnij tutaj jeden PDF z papierem firmowym.",
-    "inputs": "Przeciągnij tutaj jeden lub więcej plików PDF wejściowych.",
+    "inputs": "Przeciągnij tutaj jeden lub więcej plików PDF lub DOCX.",
     "output": "Przeciągnij tutaj folder wyjściowy."
   },
   "status": {
@@ -86,10 +86,12 @@
   },
   "errors": {
     "NO_LETTERHEAD_SELECTED": "Najpierw wybierz PDF papieru firmowego.",
-    "NO_INPUT_PDFS_SELECTED": "Najpierw wybierz co najmniej jeden plik PDF wejściowy.",
+    "NO_INPUT_PDFS_SELECTED": "Najpierw wybierz co najmniej jeden plik wejściowy.",
     "NO_OUTPUT_DIRECTORY_SELECTED": "Najpierw wybierz katalog wyjściowy.",
     "INVALID_PDF_FILE": "Jeden z wybranych plików PDF jest nieprawidłowy.",
     "DAMAGED_PDF_FILE": "Jeden z wybranych plików PDF jest uszkodzony.",
+    "INVALID_DOCUMENT_FILE": "Jeden z wybranych dokumentów jest nieprawidłowy.",
+    "DAMAGED_DOCUMENT_FILE": "Jeden z wybranych dokumentów jest uszkodzony.",
     "UNSUPPORTED_ENCRYPTED_PDF": "Zaszyfrowane pliki PDF nie są obsługiwane.",
     "FAILED_TO_READ_FILE": "Aplikacja nie mogła odczytać pliku.",
     "FAILED_TO_WRITE_FILE": "Aplikacja nie mogła zapisać pliku wyjściowego.",

@@ -42,10 +42,6 @@ async function getInitialLanguage(): Promise<AppLanguage> {
     return stored
   }
 
-  if (window.electronAPI?.getSystemLanguage) {
-    return window.electronAPI.getSystemLanguage()
-  }
-
   const locale = navigator.language.toLowerCase()
   if (locale.startsWith('pl')) {
     return 'pl'

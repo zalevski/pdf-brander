@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { getCurrentWindow } from '@tauri-apps/api/window'
+import { revealItemInDir } from '@tauri-apps/plugin-opener'
 import FileSelector from './components/FileSelector.vue'
 import LanguageSwitcher from './components/LanguageSwitcher.vue'
 import ProcessingStatus from './components/ProcessingStatus.vue'
 import SummaryCard from './components/SummaryCard.vue'
 import { useI18n } from './composables/useI18n'
 import { usePdfGenerator } from './composables/usePdfGenerator'
+import { appendLog, getLogDirectoryLocation, logError } from './lib/logger'
 
 const pdfGenerator = usePdfGenerator()
 const { locale, setLocale, t } = await useI18n()
@@ -46,6 +49,7 @@ const languageItems = computed(() => [
 ])
 const isDarkMode = computed(() => colorMode.preference !== 'light')
 const iconTheme = computed(() => (isDarkMode.value ? 'i-lucide-sun' : 'i-lucide-moon'))
+const isDevMode = import.meta.dev
 
 const letterheadStatus = computed(() => (letterhead.value ? t('states.selected') : t('states.missing')))
 const outputStatus = computed(() => (outputDirectory.value ? t('states.selected') : t('states.missing')))
@@ -106,26 +110,48 @@ async function onOpenOutputDirectory(): Promise<void> {
     await openOutputDirectory()
   } catch (error) {
     console.error(error)
+    void logError('open-output-directory-failed', error)
+  }
+}
+
+async function onOpenLogs(): Promise<void> {
+  try {
+    const logDirectory = await getLogDirectoryLocation()
+    await revealItemInDir(logDirectory)
+  } catch (error) {
+    console.error('Failed to open log directory', error)
+    void logError('open-log-directory-failed', error)
   }
 }
 
 async function onMinimizeWindow(): Promise<void> {
-  if (window.electronAPI?.minimizeWindow) {
-    await window.electronAPI.minimizeWindow()
+  try {
+    await getCurrentWindow().minimize()
+  } catch (error) {
+    console.error('Failed to minimize window', error)
+    void logError('window-minimize-failed', error)
   }
 }
 
 async function onToggleMaximizeWindow(): Promise<void> {
-  if (window.electronAPI?.toggleMaximizeWindow) {
-    await window.electronAPI.toggleMaximizeWindow()
+  try {
+    await getCurrentWindow().toggleMaximize()
+  } catch (error) {
+    console.error('Failed to toggle maximize window', error)
+    void logError('window-toggle-maximize-failed', error)
   }
 }
 
 async function onCloseWindow(): Promise<void> {
-  if (window.electronAPI?.closeWindow) {
-    await window.electronAPI.closeWindow()
+  try {
+    await getCurrentWindow().close()
+  } catch (error) {
+    console.error('Failed to close window', error)
+    void logError('window-close-failed', error)
   }
 }
+
+void appendLog('INFO', 'app-mounted')
 
 function toggleTheme(): void {
   colorMode.preference = isDarkMode.value ? 'light' : 'dark'
@@ -140,12 +166,25 @@ function toggleTheme(): void {
 
       <div class="window-surface">
         <header class="topbar">
-          <div class="topbar__title">
+          <div class="topbar__title" data-tauri-drag-region>
             <h1>{{ t('app.title') }}</h1>
             <span class="topbar__subtitle">{{ subtitle }}</span>
           </div>
 
-          <div class="topbar__actions" data-app-region="no-drag">
+          <div class="topbar__drag-region" data-tauri-drag-region></div>
+
+          <div class="topbar__actions">
+            <UButton
+              v-if="isDevMode"
+              label="Open logs"
+              icon="i-lucide-file-text"
+              color="neutral"
+              variant="soft"
+              size="xs"
+              class="logs-button"
+              @click.stop="onOpenLogs"
+            />
+
             <UTooltip :text="t('theme.toggle')">
               <UButton
                 :icon="iconTheme"
@@ -440,7 +479,6 @@ function toggleTheme(): void {
   padding: 12px 16px 10px;
   background: inherit;
   border-bottom: 1px solid var(--app-shell-surface-border);
-  -webkit-app-region: drag;
 }
 
 .topbar__title {
@@ -448,7 +486,15 @@ function toggleTheme(): void {
   display: flex;
   align-items: baseline;
   gap: 0.65rem;
-  -webkit-app-region: drag;
+  cursor: default;
+  user-select: none;
+  /* pointer-events: none; */
+}
+
+.topbar__drag-region {
+  flex: 1 1 auto;
+  min-width: 1rem;
+  align-self: stretch;
 }
 
 h1 {
@@ -473,17 +519,13 @@ h1 {
   flex-wrap: wrap;
   justify-content: flex-end;
   margin-left: auto;
-  -webkit-app-region: no-drag;
+  flex: 0 0 auto;
+  cursor: default;
 }
 
 .topbar__title h1,
 .topbar__subtitle {
-  -webkit-app-region: drag;
-}
-
-.topbar__actions,
-.topbar__actions * {
-  -webkit-app-region: no-drag;
+  user-select: none;
 }
 
 .window-controls {

@@ -4,7 +4,7 @@ Desktop app for applying a company letterhead PDF as a background to one or more
 
 ## Stack
 
-- Electron
+- Tauri 2
 - Nuxt 4
 - Vue 3
 - TypeScript
@@ -22,27 +22,26 @@ Desktop app for applying a company letterhead PDF as a background to one or more
 
 ## Scripts
 
-- `npm run dev` - run Nuxt dev server and Electron together.
-- `npm run build` - build the renderer and Electron main/preload code.
-- `npm run electron:dev` - alias for `npm run dev`.
-- `npm run electron:build` - build and package the app with electron-builder.
+- `npm run dev` - run the Tauri app in development mode.
+- `npm run build` - build the Tauri app for distribution.
+- `npm run build:renderer` - build the Nuxt renderer bundle.
 - `npm run typecheck` - run TypeScript type checking.
 
 ## Development
 
 1. Install dependencies.
 2. Run `npm run dev`.
-3. The renderer runs on the Nuxt dev server, and Electron loads it automatically.
+3. Tauri launches the Nuxt renderer through its native shell.
 
 ## Production build
 
-1. Run `npm run electron:build`.
-2. The Nuxt static output is bundled into the Electron package.
+1. Run `npm run build`.
+2. The Nuxt static output is bundled into the Tauri application.
 
 ## Notes and limitations
 
-- PDF processing happens locally inside the Electron main process.
+- PDF processing happens locally inside the Tauri frontend process.
 - Encrypted PDFs are not supported.
 - The app uses a practical page-overlay approach via `pdf-lib`; it does not preserve interactive PDF form behavior.
 - The UI is client-side only and stores the selected language in localStorage.
-- Packaging assumes a standard Electron desktop target and a writable output directory.
+- Packaging assumes a standard Tauri desktop target and a writable output directory.

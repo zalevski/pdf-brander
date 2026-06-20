@@ -21,7 +21,7 @@
   },
   "actions": {
     "selectLetterhead": "Briefpapier-PDF wählen",
-    "selectInputs": "Eingabe-PDFs wählen",
+    "selectInputs": "PDFs oder DOCX-Dateien wählen",
     "selectOutput": "Ausgabeordner wählen",
     "clear": "Auswahl löschen",
     "removeFile": "Datei entfernen",
@@ -30,7 +30,7 @@
   },
   "sections": {
     "letterhead": "Briefpapier-PDF",
-    "inputs": "Eingabe-PDFs",
+    "inputs": "Eingabedateien",
     "output": "Ausgabeordner",
     "files": "Ausgewählte Dateien",
     "summary": "Übersicht",
@@ -45,17 +45,17 @@
   },
   "placeholders": {
     "noLetterhead": "Kein Briefpapier ausgewählt",
-    "noInputs": "Keine Eingabe-PDFs ausgewählt",
+    "noInputs": "Keine Eingabedateien ausgewählt",
     "noOutput": "Kein Ausgabeordner ausgewählt"
   },
   "helper": {
     "letterhead": "Wählen Sie ein Firmenbriefpapier-PDF aus.",
-    "inputs": "Wählen Sie ein oder mehrere aus Word erzeugte PDFs aus.",
+    "inputs": "Wählen Sie ein oder mehrere PDFs oder DOCX-Dateien aus.",
     "output": "Wählen Sie, wo die erzeugten Dateien gespeichert werden sollen."
   },
   "drop": {
     "letterhead": "Ziehen Sie hier ein Briefpapier-PDF ab.",
-    "inputs": "Ziehen Sie hier ein oder mehrere Eingabe-PDFs ab.",
+    "inputs": "Ziehen Sie hier ein oder mehrere PDFs oder DOCX-Dateien ab.",
     "output": "Ziehen Sie hier einen Ausgabeordner ab."
   },
   "status": {
@@ -70,7 +70,7 @@
     "generatedSuccess": "{success} Datei(en) erstellt.",
     "generatedWithFailures": "{success} Datei(en) erstellt, {failure} fehlgeschlagen.",
     "selectedFiles": "{count} Datei(en) ausgewählt",
-    "selectAll": "Wählen Sie zuerst Briefpapier, Eingabe-PDFs und Ausgabeordner aus.",
+    "selectAll": "Wählen Sie zuerst Briefpapier, Eingabedateien und Ausgabeordner aus.",
     "nothingSelected": "Noch keine Dateien ausgewählt.",
     "inputFilesEmptyTitle": "Noch keine Eingabedateien",
     "inputFilesEmptyDescription": "Wählen oder ziehen Sie PDFs hierher, um die Liste zu füllen.",
@@ -86,10 +86,12 @@
   },
   "errors": {
     "NO_LETTERHEAD_SELECTED": "Wählen Sie zuerst ein Briefpapier-PDF aus.",
-    "NO_INPUT_PDFS_SELECTED": "Wählen Sie zuerst mindestens ein Eingabe-PDF aus.",
+    "NO_INPUT_PDFS_SELECTED": "Wählen Sie zuerst mindestens eine Eingabedatei aus.",
     "NO_OUTPUT_DIRECTORY_SELECTED": "Wählen Sie zuerst einen Ausgabeordner aus.",
     "INVALID_PDF_FILE": "Eine der ausgewählten PDF-Dateien ist ungültig.",
     "DAMAGED_PDF_FILE": "Eine der ausgewählten PDF-Dateien ist beschädigt.",
+    "INVALID_DOCUMENT_FILE": "Eines der ausgewählten Dokumente ist ungültig.",
+    "DAMAGED_DOCUMENT_FILE": "Eines der ausgewählten Dokumente ist beschädigt.",
     "UNSUPPORTED_ENCRYPTED_PDF": "Verschlüsselte PDFs werden nicht unterstützt.",
     "FAILED_TO_READ_FILE": "Die Datei konnte nicht gelesen werden.",
     "FAILED_TO_WRITE_FILE": "Die Ausgabedatei konnte nicht geschrieben werden.",

@@ -1,4 +1,9 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { desktopDir } from '@tauri-apps/api/path'
+import { open } from '@tauri-apps/plugin-dialog'
+import { revealItemInDir } from '@tauri-apps/plugin-opener'
+import { generateLetterheadedPdfs } from '../lib/pdfProcessor'
+import { appendLog, logError } from '../lib/logger'
 import type {
   FileStatus,
   GeneratePdfsPayload,
@@ -106,10 +111,8 @@ export function usePdfGenerator() {
       return
     }
 
-    if (window.electronAPI?.getDefaultOutputDirectory) {
-      const desktop = await window.electronAPI.getDefaultOutputDirectory()
-      outputDirectory.value = desktop
-    }
+    const desktop = await desktopDir()
+    setOutputDirectoryFromPath(desktop)
   }
 
   function setInputFiles(files: SelectedFile[]): void {
@@ -191,38 +194,49 @@ export function usePdfGenerator() {
   }
 
   async function selectLetterhead(): Promise<void> {
-    if (!window.electronAPI?.selectLetterheadPdf) {
-      return
-    }
-    const selected = await window.electronAPI.selectLetterheadPdf()
-    if (selected) {
-      letterhead.value = selected
+    const selected = await open({
+      title: 'Select letterhead PDF',
+      multiple: false,
+      filters: [{ name: 'PDF', extensions: ['pdf'] }]
+    })
+
+    if (typeof selected === 'string') {
+      setLetterheadFromPath(selected)
       summary.value = null
       statusMessage.value = ''
-      persistLetterhead(selected.path)
+      persistLetterhead(selected)
     }
   }
 
   async function selectInputs(): Promise<void> {
-    if (!window.electronAPI?.selectInputPdfs) {
-      return
-    }
-    const selected = await window.electronAPI.selectInputPdfs()
-    if (selected.length > 0) {
-      setInputFiles(selected)
+    const selected = await open({
+      title: 'Select input PDFs',
+      multiple: true,
+      filters: [{ name: 'PDF', extensions: ['pdf'] }]
+    })
+
+    if (Array.isArray(selected) && selected.length > 0) {
+      setInputFiles(selected.map((filePath) => ({
+        path: filePath,
+        name: fileNameFromPath(filePath)
+      })))
     }
   }
 
   async function selectOutput(): Promise<void> {
-    if (!window.electronAPI?.selectOutputDirectory) {
-      return
-    }
-    const selected = await window.electronAPI.selectOutputDirectory()
-    if (selected) {
-      outputDirectory.value = selected
+    const selected = await open({
+      title: 'Select output directory',
+      directory: true,
+      recursive: true,
+      multiple: false,
+      defaultPath: outputDirectory.value?.path ?? await desktopDir()
+    })
+
+    if (typeof selected === 'string') {
+      setOutputDirectoryFromPath(selected)
       summary.value = null
       statusMessage.value = ''
-      persistOutputDirectory(selected.path)
+      persistOutputDirectory(selected)
     }
   }
 
@@ -239,16 +253,17 @@ export function usePdfGenerator() {
   }
 
   function setInputFilesFromDrop(paths: string[]): void {
-    const pdfPaths = Array.from(new Map(
+    const inputPaths = Array.from(new Map(
       paths
         .filter((path) => path.toLowerCase().endsWith('.pdf'))
         .map((path) => [normalizePath(path), path])
     ).values())
-    if (pdfPaths.length === 0) {
+
+    if (inputPaths.length === 0) {
       return
     }
 
-    setInputFiles(pdfPaths.map((path) => ({
+    setInputFiles(inputPaths.map((path) => ({
       path,
       name: fileNameFromPath(path)
     })))
@@ -279,13 +294,16 @@ export function usePdfGenerator() {
   }
 
   async function generate(): Promise<GeneratePdfsResult | null> {
-    if (!window.electronAPI?.generatePdfs) {
-      return null
-    }
     const payload = collectPayload()
     if (!payload) {
       return null
     }
+
+    void appendLog('INFO', 'generation-started', {
+      inputs: payload.inputPdfPaths,
+      outputDirectory: payload.outputDirectory,
+      letterheadPath: payload.letterheadPath
+    })
 
     isGenerating.value = true
     summary.value = null
@@ -297,11 +315,21 @@ export function usePdfGenerator() {
     }))
 
     try {
-      const result = await window.electronAPI.generatePdfs(payload)
+      const result = await generateLetterheadedPdfs(payload, applyProgress)
       summary.value = result
+      void appendLog('INFO', 'generation-finished', {
+        successCount: result.successCount,
+        failureCount: result.failureCount,
+        outputDirectory: result.outputDirectory,
+        errorCode: result.errorCode
+      })
       return result
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
+      void logError('generation-failed', error, {
+        inputCount: inputFiles.value.length,
+        outputDirectory: outputDirectory.value?.path
+      })
       summary.value = {
         successCount: 0,
         failureCount: inputFiles.value.length,
@@ -322,26 +350,11 @@ export function usePdfGenerator() {
       return
     }
 
-    if (!window.electronAPI?.openOutputDirectory) {
-      return
-    }
-
-    await window.electronAPI.openOutputDirectory(outputDirectory.value.path)
+    await revealItemInDir(outputDirectory.value.path)
   }
 
   onMounted(() => {
     void initializeSelections()
-
-    if (!window.electronAPI?.onGeneratePdfsProgress) {
-      return
-    }
-
-    window.electronAPI.onGeneratePdfsProgress((progress) => {
-      applyProgress(progress)
-      if (progress.kind === 'all-finished') {
-        isGenerating.value = false
-      }
-    })
   })
 
   onBeforeUnmount(() => {

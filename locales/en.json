@@ -21,7 +21,7 @@
   },
   "actions": {
     "selectLetterhead": "Choose letterhead PDF",
-    "selectInputs": "Choose input PDFs",
+    "selectInputs": "Choose input PDFs or DOCX files",
     "selectOutput": "Choose output directory",
     "clear": "Clear selection",
     "removeFile": "Remove file",
@@ -30,7 +30,7 @@
   },
   "sections": {
     "letterhead": "Letterhead PDF",
-    "inputs": "Input PDFs",
+    "inputs": "Input files",
     "output": "Output directory",
     "files": "Selected files",
     "summary": "Summary",
@@ -45,17 +45,17 @@
   },
   "placeholders": {
     "noLetterhead": "No letterhead selected",
-    "noInputs": "No input PDFs selected",
+    "noInputs": "No input files selected",
     "noOutput": "No output directory selected"
   },
   "helper": {
     "letterhead": "Select one company letterhead PDF.",
-    "inputs": "Select one or more PDFs generated from Word.",
+    "inputs": "Select one or more PDFs or DOCX files.",
     "output": "Select where the generated files should be saved."
   },
   "drop": {
     "letterhead": "Drag and drop one letterhead PDF here.",
-    "inputs": "Drag and drop one or more input PDFs here.",
+    "inputs": "Drag and drop one or more PDFs or DOCX files here.",
     "output": "Drag and drop an output folder here."
   },
   "status": {
@@ -70,7 +70,7 @@
     "generatedSuccess": "{success} file(s) created.",
     "generatedWithFailures": "{success} file(s) created, {failure} failed.",
     "selectedFiles": "{count} file(s) selected",
-    "selectAll": "Select a letterhead, input PDFs, and output directory first.",
+    "selectAll": "Select a letterhead, input files, and output directory first.",
     "nothingSelected": "No files selected yet.",
     "inputFilesEmptyTitle": "No input files yet",
     "inputFilesEmptyDescription": "Choose or drop PDFs to build the list.",
@@ -86,10 +86,12 @@
   },
   "errors": {
     "NO_LETTERHEAD_SELECTED": "Select a letterhead PDF first.",
-    "NO_INPUT_PDFS_SELECTED": "Select at least one input PDF first.",
+    "NO_INPUT_PDFS_SELECTED": "Select at least one input file first.",
     "NO_OUTPUT_DIRECTORY_SELECTED": "Select an output directory first.",
     "INVALID_PDF_FILE": "One of the selected PDFs is invalid.",
     "DAMAGED_PDF_FILE": "One of the selected PDFs is damaged.",
+    "INVALID_DOCUMENT_FILE": "One of the selected documents is invalid.",
+    "DAMAGED_DOCUMENT_FILE": "One of the selected documents is damaged.",
     "UNSUPPORTED_ENCRYPTED_PDF": "Encrypted PDFs are not supported.",
     "FAILED_TO_READ_FILE": "The app could not read a file.",
     "FAILED_TO_WRITE_FILE": "The app could not write the output file.",

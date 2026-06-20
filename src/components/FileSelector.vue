@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { getCurrentWebview } from '@tauri-apps/api/webview'
 import type { FileStatus } from '../../shared/types'
 
 type ListedInputFile = {
@@ -37,18 +38,28 @@ const emit = defineEmits<{
 }>()
 
 const isDragging = ref(false)
+const dropZone = ref<HTMLElement | null>(null)
+let unlistenDragDrop: (() => void) | null = null
 
 function normalizePath(path: string): string {
   return path.trim().toLowerCase()
 }
 
-function getDroppedFilePath(file: File): string {
-  if (window.electronAPI?.getPathForFile) {
-    return window.electronAPI.getPathForFile(file)
+function isPointInsideDropZone(x: number, y: number): boolean {
+  const element = dropZone.value
+  if (!element) {
+    return false
   }
 
-  const candidate = file as File & { path?: string }
-  return candidate.path || file.name
+  const rect = element.getBoundingClientRect()
+  const scale = window.devicePixelRatio || 1
+
+  return (
+    x >= rect.left * scale &&
+    x <= rect.right * scale &&
+    y >= rect.top * scale &&
+    y <= rect.bottom * scale
+  )
 }
 
 function handleDragOver(event: DragEvent): void {
@@ -77,22 +88,40 @@ function handleDrop(event: DragEvent): void {
   }
 
   isDragging.value = false
-  const dataTransfer = event.dataTransfer
-  const paths = [
-    ...Array.from(dataTransfer?.items ?? [])
-      .filter((item) => item.kind === 'file')
-      .map((item) => item.getAsFile())
-      .filter((file): file is File => Boolean(file))
-      .map(getDroppedFilePath),
-    ...Array.from(dataTransfer?.files ?? []).map(getDroppedFilePath)
-  ].filter(Boolean)
-
-  const uniquePaths = Array.from(new Map(paths.map((path) => [normalizePath(path), path])).values())
-
-  if (uniquePaths.length > 0) {
-    emit('drop', uniquePaths)
-  }
+  event.dataTransfer?.clearData()
 }
+
+async function installDragDropListener(): Promise<void> {
+  if (typeof window === 'undefined' || !dropZone.value) {
+    return
+  }
+
+  const webview = getCurrentWebview()
+  unlistenDragDrop = await webview.onDragDropEvent((event) => {
+    if (props.disabled || event.payload.type !== 'drop' || !isPointInsideDropZone(event.payload.position.x, event.payload.position.y)) {
+      return
+    }
+
+    const uniquePaths = Array.from(new Map(
+      event.payload.paths.map((path) => [normalizePath(path), path])
+    ).values())
+
+    if (uniquePaths.length > 0) {
+      emit('drop', uniquePaths)
+    }
+  })
+}
+
+onMounted(() => {
+  void installDragDropListener()
+})
+
+onBeforeUnmount(() => {
+  if (unlistenDragDrop) {
+    unlistenDragDrop()
+    unlistenDragDrop = null
+  }
+})
 </script>
 
 <template>
@@ -123,6 +152,7 @@ function handleDrop(event: DragEvent): void {
 
     <div v-if="props.showDropZone !== false" class="workflow-card__drop-wrapper">
       <div
+        ref="dropZone"
         class="workflow-card__drop"
         :class="{
           'workflow-card__drop--active': isDragging,

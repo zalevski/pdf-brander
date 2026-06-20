@@ -1,6 +1,6 @@
-import { access, constants as fsConstants, readFile, writeFile } from 'node:fs/promises'
-import * as path from 'node:path'
+import { readFile, writeFile } from '@tauri-apps/plugin-fs'
 import { PDFDocument } from 'pdf-lib'
+import { appendLog, logError } from './logger'
 import type {
   FileGenerationResult,
   GeneratePdfsPayload,
@@ -11,7 +11,12 @@ import type {
 
 type ProgressReporter = (progress: GeneratePdfsProgress) => void
 
-function createResult(fileResults: FileGenerationResult[], outputDirectory?: string, errorCode?: ProcessingErrorCode, errorMessage?: string): GeneratePdfsResult {
+function createResult(
+  fileResults: FileGenerationResult[],
+  outputDirectory?: string,
+  errorCode?: ProcessingErrorCode,
+  errorMessage?: string
+): GeneratePdfsResult {
   const successCount = fileResults.filter((result) => result.status === 'done').length
   const failureCount = fileResults.length - successCount
 
@@ -34,17 +39,22 @@ function createFileError(inputPath: string, errorCode: ProcessingErrorCode, erro
   }
 }
 
-function getOutputFilePath(inputPath: string, outputDirectory: string): string {
-  const parsed = path.parse(inputPath)
-  return path.join(outputDirectory, parsed.base)
+function getFileExtension(filePath: string): string {
+  const fileName = filePath.replace(/\\/g, '/').split('/').pop() || filePath
+  const lastDot = fileName.lastIndexOf('.')
+  return lastDot === -1 ? '' : fileName.slice(lastDot + 1).toLowerCase()
 }
 
-function getLetterheadPageIndex(letterheadPageCount: number, pageIndex: number): number {
-  if (letterheadPageCount <= 1) {
-    return 0
-  }
+function getOutputFileName(inputPath: string): string {
+  return inputPath.replace(/\\/g, '/').split('/').pop() || inputPath
+}
 
-  return pageIndex === 0 ? 0 : 1
+function getOutputFilePath(inputPath: string, outputDirectory: string): string {
+  const fileName = getOutputFileName(inputPath)
+  const separator = outputDirectory.includes('\\') ? '\\' : '/'
+  return outputDirectory.endsWith('/') || outputDirectory.endsWith('\\')
+    ? `${outputDirectory}${fileName}`
+    : `${outputDirectory}${separator}${fileName}`
 }
 
 function classifyPdfLoadError(error: unknown): { code: ProcessingErrorCode; message: string } {
@@ -82,12 +92,9 @@ async function loadPdf(filePath: string, kind: 'input' | 'letterhead'): Promise<
     return await PDFDocument.load(bytes)
   } catch (error) {
     const classified = classifyPdfLoadError(error)
+    void logError('pdf-load-failed', error, { filePath, kind, classified })
     throw new Error(`${kind}:${classified.code}:${classified.message}`)
   }
-}
-
-async function ensureWritableDirectory(directoryPath: string): Promise<void> {
-  await access(directoryPath, fsConstants.W_OK)
 }
 
 async function composeSinglePdf(
@@ -142,12 +149,12 @@ async function composeSinglePdf(
     const embeddedLetterheadPages = new Map<number, Awaited<ReturnType<PDFDocument['embedPage']>>>()
 
     for (let pageIndex = 0; pageIndex < sourcePages.length; pageIndex += 1) {
-      const sourcePage = sourcePages[pageIndex]
+      const sourcePage = sourcePages[pageIndex]!
       const pageWidth = sourcePage.getWidth()
       const pageHeight = sourcePage.getHeight()
       const outputPage = outputDoc.addPage([pageWidth, pageHeight])
-      const letterheadIndex = getLetterheadPageIndex(letterheadPages.length, pageIndex)
-      const letterheadSourcePage = letterheadPages[Math.min(letterheadIndex, letterheadPages.length - 1)]
+      const letterheadIndex = pageIndex === 0 || letterheadPages.length === 1 ? 0 : 1
+      const letterheadSourcePage = letterheadPages[Math.min(letterheadIndex, letterheadPages.length - 1)]!
 
       let embeddedLetterhead = embeddedLetterheadPages.get(letterheadIndex)
       if (!embeddedLetterhead) {
@@ -186,6 +193,7 @@ async function composeSinglePdf(
       await writeFile(outputPath, outputBytes)
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
+      void logError('pdf-write-failed', error, { inputPath, outputPath })
       const result = createFileError(inputPath, 'FAILED_TO_WRITE_FILE', message)
       reporter({
         kind: 'file-error',
@@ -215,32 +223,22 @@ async function composeSinglePdf(
     return result
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
+    void logError('compose-single-pdf-failed', error, { inputPath, outputDirectory })
     const [scope, code, ...rest] = message.split(':')
     const errorMessage = rest.join(':') || message
 
     let errorCode: ProcessingErrorCode = 'UNEXPECTED_PROCESSING_ERROR'
-    if (scope === 'input' && code && code in ({ FAILED_TO_READ_FILE: true, INVALID_PDF_FILE: true, DAMAGED_PDF_FILE: true, UNSUPPORTED_ENCRYPTED_PDF: true } as const)) {
-      errorCode = code as ProcessingErrorCode
-    }
-
     if (scope === 'input' && code === 'FAILED_TO_READ_FILE') {
       errorCode = 'FAILED_TO_READ_FILE'
     }
-
     if (scope === 'input' && code === 'INVALID_PDF_FILE') {
       errorCode = 'INVALID_PDF_FILE'
     }
-
     if (scope === 'input' && code === 'DAMAGED_PDF_FILE') {
       errorCode = 'DAMAGED_PDF_FILE'
     }
-
     if (scope === 'input' && code === 'UNSUPPORTED_ENCRYPTED_PDF') {
       errorCode = 'UNSUPPORTED_ENCRYPTED_PDF'
-    }
-
-    if (scope === 'input' && code === 'FAILED_TO_WRITE_FILE') {
-      errorCode = 'FAILED_TO_WRITE_FILE'
     }
 
     const result = createFileError(inputPath, errorCode, errorMessage)
@@ -260,23 +258,21 @@ async function composeSinglePdf(
 
 export async function generateLetterheadedPdfs(payload: GeneratePdfsPayload, reporter: ProgressReporter): Promise<GeneratePdfsResult> {
   if (!payload.letterheadPath) {
+    void appendLog('WARN', 'generation-aborted-no-letterhead')
     return createResult([], undefined, 'NO_LETTERHEAD_SELECTED')
   }
 
   if (!payload.inputPdfPaths.length) {
+    void appendLog('WARN', 'generation-aborted-no-inputs')
     return createResult([], undefined, 'NO_INPUT_PDFS_SELECTED')
   }
 
   if (!payload.outputDirectory) {
+    void appendLog('WARN', 'generation-aborted-no-output-directory')
     return createResult([], undefined, 'NO_OUTPUT_DIRECTORY_SELECTED')
   }
 
-  try {
-    await ensureWritableDirectory(payload.outputDirectory)
-  } catch {
-    return createResult([], payload.outputDirectory, 'OUTPUT_DIRECTORY_NOT_WRITABLE')
-  }
-
+  const outputDirectory = payload.outputDirectory
   const fileResults: FileGenerationResult[] = []
 
   let letterheadDoc: PDFDocument
@@ -284,12 +280,13 @@ export async function generateLetterheadedPdfs(payload: GeneratePdfsPayload, rep
     letterheadDoc = await loadPdf(payload.letterheadPath, 'letterhead')
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
+    void logError('letterhead-load-failed', error, { letterheadPath: payload.letterheadPath })
     const [, code, ...rest] = message.split(':')
     const errorCode = (code as ProcessingErrorCode) || 'UNEXPECTED_PROCESSING_ERROR'
     const errorMessage = rest.join(':') || message
 
     for (let index = 0; index < payload.inputPdfPaths.length; index += 1) {
-      const inputPath = payload.inputPdfPaths[index]
+      const inputPath = payload.inputPdfPaths[index]!
       fileResults.push(createFileError(inputPath, errorCode, errorMessage))
       reporter({
         kind: 'file-error',
@@ -307,12 +304,13 @@ export async function generateLetterheadedPdfs(payload: GeneratePdfsPayload, rep
       total: payload.inputPdfPaths.length
     })
 
-    return createResult(fileResults, payload.outputDirectory)
+    return createResult(fileResults, outputDirectory)
   }
 
   if (letterheadDoc.getPageCount() === 0) {
+    void appendLog('ERROR', 'letterhead-has-no-pages', { letterheadPath: payload.letterheadPath })
     for (let index = 0; index < payload.inputPdfPaths.length; index += 1) {
-      const inputPath = payload.inputPdfPaths[index]
+      const inputPath = payload.inputPdfPaths[index]!
       const errorCode: ProcessingErrorCode = 'INVALID_PDF_FILE'
       const errorMessage = 'Letterhead PDF contains no pages'
       fileResults.push(createFileError(inputPath, errorCode, errorMessage))
@@ -332,14 +330,14 @@ export async function generateLetterheadedPdfs(payload: GeneratePdfsPayload, rep
       total: payload.inputPdfPaths.length
     })
 
-    return createResult(fileResults, payload.outputDirectory)
+    return createResult(fileResults, outputDirectory)
   }
 
   for (let index = 0; index < payload.inputPdfPaths.length; index += 1) {
-    const inputPath = payload.inputPdfPaths[index]
+    const inputPath = payload.inputPdfPaths[index]!
     const result = await composeSinglePdf(
       inputPath,
-      payload.outputDirectory,
+      outputDirectory,
       letterheadDoc,
       reporter,
       index,
@@ -354,5 +352,10 @@ export async function generateLetterheadedPdfs(payload: GeneratePdfsPayload, rep
     total: payload.inputPdfPaths.length
   })
 
-  return createResult(fileResults, payload.outputDirectory)
+  void appendLog('INFO', 'generation-complete', {
+    successCount: fileResults.filter((result) => result.status === 'done').length,
+    failureCount: fileResults.filter((result) => result.status === 'error').length
+  })
+
+  return createResult(fileResults, outputDirectory)
 }
