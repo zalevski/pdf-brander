@@ -1,5 +1,5 @@
 {
-  "name": "pdf-letterhead",
+  "name": "pdf-brander",
   "private": true,
   "version": "0.1.0",
   "description": "Desktop app for branding PDFs with company letterheads.",

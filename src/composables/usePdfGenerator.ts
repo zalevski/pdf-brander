@@ -19,8 +19,8 @@ export interface ManagedInputFile extends SelectedFile {
 }
 
 export function usePdfGenerator() {
-  const LETTERHEAD_KEY = 'pdf-letterhead-last-letterhead'
-  const OUTPUT_DIR_KEY = 'pdf-letterhead-last-output-directory'
+  const LETTERHEAD_KEY = 'pdf-brander-last-letterhead'
+  const OUTPUT_DIR_KEY = 'pdf-brander-last-output-directory'
 
   const letterhead = ref<SelectedFile | null>(null)
   const inputFiles = ref<ManagedInputFile[]>([])

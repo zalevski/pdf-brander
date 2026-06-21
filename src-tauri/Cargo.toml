@@ -1,5 +1,5 @@
 [package]
-name = "pdf-letterhead"
+name = "pdf-brander"
 version = "0.1.0"
 description = "PDF Brander"
 authors = ["zalev"]

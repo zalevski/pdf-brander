@@ -2,7 +2,7 @@
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "PDF Brander",
   "version": "0.1.0",
-  "identifier": "com.pdfletterhead",
+  "identifier": "com.pdfbrander",
   "build": {
     "frontendDist": "../.output/public",
     "devUrl": "http://localhost:3000",

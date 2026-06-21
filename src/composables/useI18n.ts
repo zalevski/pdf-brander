@@ -4,7 +4,7 @@ import pl from '../../locales/pl.json'
 import de from '../../locales/de.json'
 import type { AppLanguage } from '../../shared/types'
 
-const STORAGE_KEY = 'pdf-letterhead-language'
+const STORAGE_KEY = 'pdf-brander-language'
 const dictionaries = {
   en,
   pl,

@@ -1,7 +1,7 @@
 import { appLogDir } from '@tauri-apps/api/path'
 import { mkdir, writeTextFile, BaseDirectory } from '@tauri-apps/plugin-fs'
 
-const LOG_FILE_NAME = 'pdf-letterhead.log'
+const LOG_FILE_NAME = 'pdf-brander.log'
 
 function serializeError(error: unknown): string {
   if (error instanceof Error) {
